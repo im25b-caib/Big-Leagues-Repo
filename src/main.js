@@ -94,7 +94,7 @@ class GameScene extends Phaser.Scene {
         this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
         this.playerTwo.setDisplaySize(50, 50);
         this.playerTwo.score = 0;
-
+        
         //SOCKET
         // --- DOM-ELEMENTE FÜR HUD REFERENZIEREN ---
         this.elScoreA = document.getElementById("score-a");
@@ -140,6 +140,30 @@ class GameScene extends Phaser.Scene {
                 this.colliderPlayer = this.physics.add.collider(this.ball, this.playerOne);
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
             }
+
+            if (data.type === "ballVelocity") {
+                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
+            }
+
+            if (data.type === "score" && !this.playerOne.isHost){
+                console.log(`Received data: ${data}`);
+                if (data.winner === "player_1") {
+                    this.playerTwo.score = data.playerScore;
+                }
+                if (data.winner === "player_2"){
+                    this.playerOne.score = data.enemyScore;
+                }
+            
+            if (data.type === "pause"){
+                if (data.freezed){
+                    this.paused = true;
+
+                    this.ball.setPosition(sizes.width / 2, sizes.height / 2);
+                    this.ball.body.setVelocity(0, 0);
+                }
+                else this.paused = false;
+            }
+        }
         })
 
             if (data.scoreA !== undefined || data.scoreB !== undefined) {
