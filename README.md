@@ -16,3 +16,5 @@ Open the Vite URL in two browser tabs to join the same lobby. Move with W/A/S/D.
 
 
 ## Keybinds 
+- W/A/S/D - Movement 
+- F - Schiessen
