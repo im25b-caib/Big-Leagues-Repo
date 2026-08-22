@@ -165,13 +165,13 @@ class GameScene extends Phaser.Scene {
                 } else {
                     this.paused = false;
                 }
-                else this.paused = false;
+
             }
 
             if (data.scoreA !== undefined || data.scoreB !== undefined) {
                 this.updateScore(data.scoreA, data.scoreB);
             }
-        });
+        };
         });
 
         // Particle Effects
