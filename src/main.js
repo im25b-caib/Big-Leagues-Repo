@@ -1,12 +1,20 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
 
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
 };
 
 let bg, ball, playerOne, playerTwo;
+
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
 
 window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
@@ -22,8 +30,9 @@ window.addEventListener("keyup", (event) => {
     }
 });
 
+
 function movePlayer() {
-    // adjust  x and y of player
+
 };
 
 class GameScene extends Phaser.Scene {
