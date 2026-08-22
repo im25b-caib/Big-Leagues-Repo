@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link type="text/css" rel="stylesheet" href="src/style.css">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/phaser/dist/phaser.min.js"></script> -->
-    <title>Ballmaxxing</title>
-  </head>
-  <body>
-  <header>
-    <p>Welcome!</p>
-  </header>
-  <main>
-    <canvas id="gameCanvas"></canvas>
-  </main>
-  <footer>
-    <p>Ballmaxxing | Hackathon 2026</p>
-  </footer>
-  <script type="module" src="/src/main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link type="text/css" rel="stylesheet" href="src/style.css">
+  <link rel="icon" type="image/png" href="public/assets/favicon.png">
+
+  <title>Ballmaxxing</title>
+</head>
+<body>
+<main>
+  <div class="hud-container">
+    <div class="scoreboard">
+      <div id="username-a"class="team team-a">TEAM A</div>
+      <div class="scores">
+        <span id="score-a">0</span>
+        <span>:</span>
+        <span id="score-b">0</span>
+      </div>
+      <div id="username-b" class="team team-b">TEAM B</div>
+    </div>
+
+    <!-- Timer steht im HTML nach dem Scoreboard -->
+    <div class="timer-box" id="timer">03:00</div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+</main>
+<script type="module" src="/src/main.js"></script>
+</body>
 </html>
