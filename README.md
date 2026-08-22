@@ -1,6 +1,6 @@
 # Big Leagues
 
-## Run locally
+## Running the game locally
 
 Open two terminals in this directory:
 
