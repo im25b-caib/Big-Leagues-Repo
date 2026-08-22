@@ -52,16 +52,25 @@ class GameScene extends Phaser.Scene {
         bg.setDisplaySize(sizes.width, sizes.height);
 
         // Ball
-        ball = this.add.image(sizes.width / 2, sizes.height / 2, "ball");
-        ball.setDisplaySize(30, 30);
+        this.ball = this.add.image(sizes.width / 2, sizes.height / 2, "ball");
+        this.ball.setDisplaySize(30, 30);
 
         // Spieler 1 — quadratisch, sonst wird der Kreis zur Ellipse
-        playerOne = this.add.image(200, sizes.height / 2, "playerOne");
-        playerOne.setDisplaySize(50, 50);
+        this.playerOne = this.physics.add.sprite(200, sizes.height / 2, "playerOne");
+        this.playerOne.setDisplaySize(50, 50);
+
+        //Properties
+        this.paused = false;
+        this.playerOne.isHost = null;
+        this.playerOne.lobbyId = null;
+        this.playerOne.score = 0;
+        this.ball.ballLaunched = false;
+        this.playerTwo.score = 0;
+
 
         // Spieler 2
-        playerTwo = this.add.image(sizes.width - 200, sizes.height / 2, "playerTwo");
-        playerTwo.setDisplaySize(50, 50);
+        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
+        this.playerTwo.setDisplaySize(50, 50);
 
         //SOCKET
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
@@ -77,6 +86,20 @@ class GameScene extends Phaser.Scene {
 
         this.socket.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
+            if (data.type === "move") {
+                this.playerTwo.setPosition(sizes.width - data.x, config.height - data.y);
+            }
+
+            if (data.type === "lobby_connect") {
+                console.log("Lobby info: " + data.lobbyId + " " + data.isHost);
+                this.playerOne.isHost = data.isHost;
+                this.playerOne.lobbyId = data.lobbyId;
+            }
+            if (this.playerOne.isHost) {
+                this.ball.setBounce(1, 1).setCollideWorldBounds(true);
+                this.colliderPlayer = this.physics.add.collider(this.ball, this.player);
+                this.colliderEnemy = this.physics.add.collider(this.ball, this.enemy);
+            }
         })
     }
 
