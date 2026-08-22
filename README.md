@@ -2,7 +2,8 @@
 
 ## Running the game locally
 
-Open two terminals in this directory:
+1. Clone the repository 
+2. Open two terminals in this directory:
 
 ```bash
 npm run server
@@ -17,6 +18,6 @@ Open the Vite URL in two browser tabs to join the same lobby. Move with W/A/S/D.
 
 ## Keybinds 
 - W/A/S/D - Movement 
-- F - Schiessen
-- E - Grätsche
-- Q - Ausweichen einer Grätsche 
+- F - Shooting the ball
+- E - tackle
+- Q - Dribble / dodge tackle
