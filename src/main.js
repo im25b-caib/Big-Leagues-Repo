@@ -59,18 +59,20 @@ class GameScene extends Phaser.Scene {
         this.playerOne = this.physics.add.sprite(200, sizes.height / 2, "playerOne");
         this.playerOne.setDisplaySize(50, 50);
 
+        // Spieler 2
+        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
+        this.playerTwo.setDisplaySize(50, 50);
+
         //Properties
         this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
         this.playerOne.score = 0;
-        this.ball.ballLaunched = false;
+        // this.ball.ballLaunched = false;
         this.playerTwo.score = 0;
 
 
-        // Spieler 2
-        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
-        this.playerTwo.setDisplaySize(50, 50);
+        
 
         //SOCKET
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
@@ -100,6 +102,8 @@ class GameScene extends Phaser.Scene {
                 this.colliderPlayer = this.physics.add.collider(this.ball, this.player);
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.enemy);
             }
+
+
         })
     }
 
