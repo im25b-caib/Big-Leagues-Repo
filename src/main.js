@@ -1,12 +1,37 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
-
+const speedDown = 200;
 
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
 };
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
+const speed = 5;
 
-const speedDown = 300
+// Eventlisteners
+
+window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = true;
+    }
+});
+
+window.addEventListener("keyup", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = false;
+    }
+});
+
+function movePlayer() {
+    // adjust  x and y of player
+}
 
 let bg;
 let ball;
