@@ -1,5 +1,6 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -7,11 +8,29 @@ const sizes = {
 
 let bg, ball, playerOne, playerTwo;
 
+window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = true;
+    }
+});
+
+window.addEventListener("keyup", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = false;
+    }
+});
+
+function movePlayer() {
+    // adjust  x and y of player
+};
+
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
     }
-// ddd
+
     preload() {
         // Zeigt in der Konsole genau, welche Datei fehlschlägt und unter welcher URL
         this.load.on("loaderror", (file) => {
@@ -47,13 +66,19 @@ class GameScene extends Phaser.Scene {
 
     update() {
         // Bewegung kommt hier rein
+        movePlayer();
     }
+
 }
 
+window.onload = () => {
+    console.log("page is fully loaded");
+};
 const config = {
-    type: Phaser.AUTO,
+    type: Phaser.WEBGL,
     width: sizes.width,
     height: sizes.height,
+    canvas: gameCanvas,
     physics: {
         default: "arcade",
         arcade: {
@@ -65,3 +90,11 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+
+class SoccerPlayer {
+    constructor() {this.x = x, this.y = y}
+}
+
+
+
