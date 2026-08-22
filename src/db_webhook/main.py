@@ -1,6 +1,5 @@
 from fastapi import FastAPI, WebSocket
 from websocket.websocket import Websocket
-import asyncio
 app = FastAPI()
 
 
