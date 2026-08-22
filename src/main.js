@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
 
 const sizes = {
@@ -24,6 +24,9 @@ class GameScene extends Phaser.Scene {
 
 }
 
+window.onload = () => {
+    console.log("page is fully loaded");
+};
 const config = {
     type: Phaser.WEBGL,
     width: sizes.width,
@@ -40,3 +43,6 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+
+

@@ -1,5 +1,5 @@
 :root {
-  --dark:#181818;
+  --dark:#EDE8D0;
   --light:#whitesmoke;
 }
 
@@ -14,7 +14,7 @@ html, body{
 }
 
 body{
-  background-color: darkgray;
+  background-color: var(--dark);
   color: white;
   display: flex;
   flex-direction: column;
@@ -33,7 +33,7 @@ main{
   display: flex;
 }
 
-#gameContainer{
+#gameCanvas{
   border:1px solid blue;
   position: absolute;
   top: 50%;
