@@ -6,8 +6,6 @@ class Data_structure(TypedDict):
     username: int
     password: NotRequired[str]
 
-
-
 class Websocket:
     def __init__(self,websocket:WebSocket):
         self.websocket = websocket
@@ -36,8 +34,8 @@ class Websocket:
         if not passowrd:
             if is_required_param(attr,'password'):
                 return {'error':'A function was called that requires a password but no password was given.'}
-            return attr(username) 
-        return attr(username,passowrd)
+            return {'result': attr(username)}
+        return {'result':attr(username,passowrd)}
         
         
 def is_required_param(func,param_name:str):
