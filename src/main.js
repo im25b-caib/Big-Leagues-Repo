@@ -1,5 +1,7 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
+
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -7,6 +9,7 @@ const sizes = {
 
 let bg, ball, playerOne, playerTwo;
 
+// Event-Listener für Tastatur
 const keys = {
     w: false,
     a: false,
@@ -22,13 +25,13 @@ window.addEventListener("keydown", (event) => {
     }
 });
 
-
 window.addEventListener("keyup", (event) => {
     const key = event.key.toLowerCase();
     if (key in keys) {
         keys[key] = false;
     }
 });
+
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -37,10 +40,12 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
+        // Zeigt in der Konsole genau, welche Datei fehlschlägt und unter welcher URL
         this.load.on("loaderror", (file) => {
             console.error("Laden fehlgeschlagen:", file.key, "→", file.src);
         });
 
+        // index.html liegt in /src/, die Bilder in /assets/ → eine Ebene hoch
         this.load.setPath("../assets/");
 
         this.load.image("bg", "Only_Field.webp");
@@ -53,15 +58,16 @@ class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // Hintergrund
+        // Hintergrund skaliert auf volle Canvas-Größe
         bg = this.add.image(0, 0, "bg").setOrigin(0, 0);
         bg.setDisplaySize(width, height);
 
+        // Dynamisches Resizing falls Fenstergröße verändert wird
         this.scale.on('resize', (gameSize) => {
             bg.setDisplaySize(gameSize.width, gameSize.height);
         });
 
-        // Ball als Physik-Objekt (damit Collider & Velocity funktionieren)
+        // Ball als Physik-Objekt anlegen
         this.ball = this.physics.add.image(width / 2, height / 2, "ball");
         this.ball.setDisplaySize(30, 30);
 
@@ -73,7 +79,7 @@ class GameScene extends Phaser.Scene {
         this.playerTwo = this.physics.add.sprite(width - 200, height / 2, "playerTwo");
         this.playerTwo.setDisplaySize(50, 50);
 
-        // Properties
+        // Properties setzen
         this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
@@ -123,7 +129,6 @@ class GameScene extends Phaser.Scene {
                 this.playerOne.isHost = data.isHost;
                 this.playerOne.lobbyId = data.lobbyId;
             }
-
             if (this.playerOne.isHost) {
                 this.ball.setBounce(1, 1).setCollideWorldBounds(true);
                 this.colliderPlayerOne = this.physics.add.collider(this.ball, this.playerOne);
@@ -131,7 +136,7 @@ class GameScene extends Phaser.Scene {
             }
 
             if (data.type === "ballVelocity") {
-                this.ball.setPosition(this.scale.width - data.x, this.scale.height - data.y);
+                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
             }
 
             if (data.type === "score" && !this.playerOne.isHost) {
@@ -148,13 +153,25 @@ class GameScene extends Phaser.Scene {
 
             if (data.type === "pause") {
                 if (data.freezed) {
+                // HTML Scoreboard synchronisieren
+                this.updateScore(this.playerOne.score, this.playerTwo.score);
+            }
+
+            if (data.type === "pause") {
+                if (data.freezed) {
                     this.paused = true;
                     this.ball.setPosition(this.scale.width / 2, this.scale.height / 2);
                     this.ball.body.setVelocity(0, 0);
                 } else {
                     this.paused = false;
                 }
+                else this.paused = false;
             }
+
+            if (data.scoreA !== undefined || data.scoreB !== undefined) {
+                this.updateScore(data.scoreA, data.scoreB);
+            }
+        });
         });
 
         // Particle Effects
@@ -234,7 +251,6 @@ class SoccerPlayer {
 window.onload = () => {
     console.log("page is fully loaded");
 };
-
 const config = {
     type: Phaser.WEBGL,
     canvas: document.getElementById("gameCanvas"),
