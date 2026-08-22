@@ -1,12 +1,20 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
 
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
 };
 
 let bg, ball, playerOne, playerTwo;
+
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
 
 window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
@@ -22,9 +30,6 @@ window.addEventListener("keyup", (event) => {
     }
 });
 
-function movePlayer() {
-    // adjust  x and y of player
-};
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -59,21 +64,20 @@ class GameScene extends Phaser.Scene {
         this.playerOne = this.physics.add.sprite(200, sizes.height / 2, "playerOne");
         this.playerOne.setDisplaySize(50, 50);
 
-        // Spieler 2
-        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
-        this.playerTwo.setDisplaySize(50, 50);
-
         //Properties
         this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
         this.playerOne.score = 0;
-        // this.ball.ballLaunched = false;
+        this.ball.ballLaunched = false;
+
+
+
+        // Spieler 2
+        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
+        this.playerTwo.setDisplaySize(50, 50);
         this.playerTwo.score = 0;
-
-
         
-
         //SOCKET
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
         this.socket.onopen = (event) => {
@@ -103,13 +107,39 @@ class GameScene extends Phaser.Scene {
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.enemy);
             }
 
+            if (data.type === "ballVelocity") {
+                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
+            }
 
+            if (data.type === "score" && !this.playerOne.isHost){
+                console.log(`Received data: ${data}`);
+                if (data.winner === "player_1") {
+                    this.playerTwo.score = data.playerScore;
+                }
+                if (data.winner === "player_2"){
+                    this.playerOne.score = data.enemyScore;
+                }
+            
+            if (data.type === "pause"){
+                if (data.freezed){
+                    this.paused = true;
+
+                    this.ball.setPosition(sizes.width / 2, sizes.height / 2);
+                    this.ball.body.setVelocity(0, 0);
+                }
+                else this.paused = false;
+            }
+        }
         })
     }
 
     update() {
         // Bewegung kommt hier rein
-        movePlayer();
+        const speed = 4;
+        if (keys.w) this.playerOne.y -= speed;
+        if (keys.s) this.playerOne.y += speed;
+        if (keys.a) this.playerOne.x -= speed;
+        if (keys.d) this.playerOne.x += speed;
     }
 
 }
