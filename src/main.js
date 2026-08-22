@@ -21,7 +21,8 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        bg = this.add.image(200,200 , "bg");
+        bg = this.add.image(0,0 , "bg").setOrigin(0, 0);
+        bg.setDisplaySize(sizes.width, sizes.height);
     }
 
     update() {
