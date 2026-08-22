@@ -77,7 +77,7 @@ class GameScene extends Phaser.Scene {
         this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
         this.playerTwo.setDisplaySize(50, 50);
         this.playerTwo.score = 0;
-        
+
         //SOCKET
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
         this.socket.onopen = (event) => {
@@ -103,8 +103,8 @@ class GameScene extends Phaser.Scene {
             }
             if (this.playerOne.isHost) {
                 this.ball.setBounce(1, 1).setCollideWorldBounds(true);
-                this.colliderPlayer = this.physics.add.collider(this.ball, this.player);
-                this.colliderEnemy = this.physics.add.collider(this.ball, this.enemy);
+                this.colliderPlayerOne = this.physics.add.collider(this.ball, this.playerOne);
+                this.colliderPlayerTwo = this.physics.add.collider(this.ball, this.playerTwo);
             }
 
             if (data.type === "ballVelocity") {
@@ -114,10 +114,10 @@ class GameScene extends Phaser.Scene {
             if (data.type === "score" && !this.playerOne.isHost){
                 console.log(`Received data: ${data}`);
                 if (data.winner === "player_1") {
-                    this.playerTwo.score = data.playerScore;
+                    this.playerTwo.score = data.playerOneScore;
                 }
                 if (data.winner === "player_2"){
-                    this.playerOne.score = data.enemyScore;
+                    this.playerOne.score = data.playerTwoScore;
                 }
             
             if (data.type === "pause"){
