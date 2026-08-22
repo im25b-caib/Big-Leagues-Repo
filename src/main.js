@@ -43,6 +43,22 @@ class GameScene extends Phaser.Scene {
         // Spieler 2
         playerTwo = this.add.image(sizes.width - 200, sizes.height / 2, "playerTwo");
         playerTwo.setDisplaySize(50, 50);
+
+        //SOCKET
+        this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
+        this.socket.onopen = (event) => {
+            console.log("New socket connected!");
+        };
+        this.socket.onclose = (event) => {
+            console.log("Socket closed");
+        };
+        this.socket.onerror = (error) => {
+            console.error("Websocket error: ", error);
+        }
+
+        this.socket.addEventListener("message", (event) => {
+            const data = JSON.parse(event.data);
+        })
     }
 
     update() {
