@@ -13,6 +13,7 @@ npm run server
 npm run dev
 ```
 
+<<<<<<< HEAD
 3. Open the Vite URL in two browser tabs to join the same lobby. 
 
 Enjoy! 
@@ -23,3 +24,12 @@ Enjoy!
 - E - tackle
 - Q - Dribble / dodge tackle
 
+=======
+Open the Vite URL in two browser tabs to join the same lobby.
+
+- Move with W/A/S/D.
+- Run into the ball to take possession.
+- Touch an opponent's attached ball to steal it.
+- Press Space to kick in your current (or last) movement direction.
+- Score by kicking the ball into the opponent's goal.
+>>>>>>> bab1367 (Game window finished)
