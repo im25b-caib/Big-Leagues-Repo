@@ -161,6 +161,7 @@ gameWss.on("connection", (ws) => {
 // =====================================================
 // START
 // =====================================================
+
 server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server läuft auf Port ${PORT} (Pfade: /auth, /ws, statisches Frontend aus /dist)`);
 });
