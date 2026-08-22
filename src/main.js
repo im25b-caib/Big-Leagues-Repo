@@ -11,7 +11,7 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
     }
-
+// ddd
     preload() {
         // Zeigt in der Konsole genau, welche Datei fehlschlägt und unter welcher URL
         this.load.on("loaderror", (file) => {
