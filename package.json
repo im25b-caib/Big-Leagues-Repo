@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": ".venv/bin/uvicorn src.server.app:app --reload",
     "build": "vite build",
     "preview": "vite preview"
   },
