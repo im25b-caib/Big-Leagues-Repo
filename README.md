@@ -13,11 +13,13 @@ npm run server
 npm run dev
 ```
 
-Open the Vite URL in two browser tabs to join the same lobby. Move with W/A/S/D.
+3. Open the Vite URL in two browser tabs to join the same lobby. 
 
+Enjoy! 
 
 ## Keybinds 
 - W/A/S/D - Movement 
 - F - Shooting the ball
 - E - tackle
 - Q - Dribble / dodge tackle
+
