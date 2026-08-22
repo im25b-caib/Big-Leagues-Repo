@@ -20,6 +20,7 @@ async def connection(websocket_obj:WebSocket):
             while True:
                 data = await websocket.receive_json()
                 result = wb.handle_json(data,db_manager)
+
                 await websocket.send_json(result)
         except WebSocketDisconnect:
             pass
