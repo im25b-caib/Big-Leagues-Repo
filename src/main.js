@@ -1,17 +1,33 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
+
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+};
+
 let bg, ball, playerOne, playerTwo;
 
 // Event-Listener für Tastatur
-const keys = {};
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
+
 window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
-    keys[key] = true;
+    if (key in keys) {
+        keys[key] = true;
+    }
 });
 
 window.addEventListener("keyup", (event) => {
     const key = event.key.toLowerCase();
-    keys[key] = false;
+    if (key in keys) {
+        keys[key] = false;
+    }
 });
 
 function movePlayer() {
@@ -60,6 +76,7 @@ class GameScene extends Phaser.Scene {
         this.playerOne = this.physics.add.sprite(200, height / 2, "playerOne");
         this.playerOne.setDisplaySize(50, 50);
 
+        //Properties
         // Spieler 2
         this.playerTwo = this.physics.add.sprite(width - 200, height / 2, "playerTwo");
         this.playerTwo.setDisplaySize(50, 50);
@@ -69,8 +86,16 @@ class GameScene extends Phaser.Scene {
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
         this.playerOne.score = 0;
+        this.ball.ballLaunched = false;
+
+
+
+        // Spieler 2
+        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
+        this.playerTwo.setDisplaySize(50, 50);
         this.playerTwo.score = 0;
 
+        //SOCKET
         // --- DOM-ELEMENTE FÜR HUD REFERENZIEREN ---
         this.elScoreA = document.getElementById("score-a");
         this.elScoreB = document.getElementById("score-b");
@@ -115,6 +140,7 @@ class GameScene extends Phaser.Scene {
                 this.colliderPlayer = this.physics.add.collider(this.ball, this.playerOne);
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
             }
+        })
 
             if (data.scoreA !== undefined || data.scoreB !== undefined) {
                 this.updateScore(data.scoreA, data.scoreB);
@@ -123,6 +149,12 @@ class GameScene extends Phaser.Scene {
     }
 
     update() {
+        // Bewegung kommt hier rein
+        const speed = 4;
+        if (keys.w) this.playerOne.y -= speed;
+        if (keys.s) this.playerOne.y += speed;
+        if (keys.a) this.playerOne.x -= speed;
+        if (keys.d) this.playerOne.x += speed;
         movePlayer();
     }
 
