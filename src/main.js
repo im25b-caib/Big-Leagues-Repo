@@ -1,49 +1,23 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-};
-
-let bg, ball, playerOne, playerTwo;
-
-// Event-Listener für Tastatur
-const keys = {
-    w: false,
-    a: false,
-    s: false,
-    d: false
-};
-
-window.addEventListener("keydown", (event) => {
-    const key = event.key.toLowerCase();
-    if (key in keys) {
-        keys[key] = true;
-    }
-});
-
-window.addEventListener("keyup", (event) => {
-    const key = event.key.toLowerCase();
-    if (key in keys) {
-        keys[key] = false;
-    }
-});
+const PLAYER_SPEED = 280;
+const BALL_SPEED = 320;
+const NETWORK_INTERVAL = 50;
+const GOAL_HEIGHT_RATIO = 0.36;
 
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
         this.scoreA = 0;
         this.scoreB = 0;
-        this.timeLeft = 180; // 3 Minuten in Sekunden
+        this.timeLeft = 180;
+        this.paused = false;
+        this.lastMoveSentAt = 0;
+        this.lastBallSentAt = 0;
     }
 
     preload() {
-        this.load.on("loaderror", (file) => {
-            console.error("Laden fehlgeschlagen:", file.key, "→", file.src);
-        });
-
-        this.load.setPath("../assets/");
-
+        this.load.setPath("/assets/");
         this.load.image("bg", "Only_Field.webp");
         this.load.image("ball", "football.png");
         this.load.image("playerOne", "redcircle.png");
@@ -51,171 +25,181 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        const width = this.scale.width;
-        const height = this.scale.height;
+        const { width, height } = this.scale;
+        this.bg = this.add.image(0, 0, "bg").setOrigin(0).setDisplaySize(width, height);
+        this.physics.world.setBounds(0, 0, width, height);
 
-        // Hintergrund skaliert auf volle Canvas-Größe
-        bg = this.add.image(0, 0, "bg").setOrigin(0, 0);
-        bg.setDisplaySize(width, height);
+        this.ball = this.physics.add.image(width / 2, height / 2, "ball")
+            .setDisplaySize(30, 30).setBounce(1).setCollideWorldBounds(true);
+        this.playerOne = this.physics.add.image(width * 0.18, height / 2, "playerOne")
+            .setDisplaySize(50, 50).setCollideWorldBounds(true).setImmovable(true);
+        this.playerTwo = this.physics.add.image(width * 0.82, height / 2, "playerTwo")
+            .setDisplaySize(50, 50).setCollideWorldBounds(true).setImmovable(true);
 
-        // Dynamisches Resizing falls Fenstergröße verändert wird
-        this.scale.on('resize', (gameSize) => {
-            bg.setDisplaySize(gameSize.width, gameSize.height);
-        });
-
-        // Ball als Physik-Objekt anlegen
-        this.ball = this.physics.add.image(width / 2, height / 2, "ball");
-        this.ball.setDisplaySize(30, 30);
-
-        // Spieler 1
-        this.playerOne = this.physics.add.sprite(200, height / 2, "playerOne");
-        this.playerOne.setDisplaySize(50, 50);
-
-        // Spieler 2
-        this.playerTwo = this.physics.add.sprite(width - 200, height / 2, "playerTwo");
-        this.playerTwo.setDisplaySize(50, 50);
-
-        // Properties setzen
-        this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
-        this.playerOne.score = 0;
-        this.playerTwo.score = 0;
         this.ball.ballLaunched = false;
+        this.remotePlayerTarget = new Phaser.Math.Vector2(this.playerTwo.x, this.playerTwo.y);
+        this.remoteBallTarget = new Phaser.Math.Vector2(this.ball.x, this.ball.y);
+        this.physics.add.collider(this.ball, this.playerOne);
+        this.physics.add.collider(this.ball, this.playerTwo);
 
-        // --- DOM-ELEMENTE FÜR HUD REFERENZIEREN ---
         this.elScoreA = document.getElementById("score-a");
         this.elScoreB = document.getElementById("score-b");
         this.elTimer = document.getElementById("timer");
+        this.keys = this.input.keyboard.addKeys("W,A,S,D");
+        this.scale.on("resize", this.resizeGame, this);
+        this.time.addEvent({ delay: 1000, callback: this.updateTimer, callbackScope: this, loop: true });
+        this.connectSocket();
+    }
 
-        // --- PHASER TIMER EVENT ---
-        this.time.addEvent({
-            delay: 1000,
-            callback: this.updateTimer,
-            callbackScope: this,
-            loop: true
-        });
+    connectSocket() {
+        const protocol = location.protocol === "https:" ? "wss" : "ws";
+        this.socket = new WebSocket(`${protocol}://${location.hostname || "127.0.0.1"}:8000/ws`);
+        this.socket.addEventListener("message", (event) => this.handleMessage(JSON.parse(event.data)));
+        this.socket.addEventListener("error", (error) => console.error("WebSocket error", error));
+    }
 
-        // --- WEBSOCKET ---
-        this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
-        this.socket.onopen = (event) => {
-            console.log("New socket connected!");
-        };
-        this.socket.onclose = (event) => {
-            console.log("Socket closed");
-        };
-        this.socket.onerror = (error) => {
-            console.error("Websocket error: ", error);
-        };
+    handleMessage(data) {
+        if (data.type === "lobby_connect") {
+            this.playerOne.isHost = data.isHost;
+            this.playerOne.lobbyId = data.lobbyId;
+        } else if (data.type === "move") {
+            this.remotePlayerTarget.set(
+                this.scale.width * (1 - this.readNormalized(data, "x")),
+                this.scale.height * (1 - this.readNormalized(data, "y"))
+            );
+        } else if (data.type === "launch_ball" && this.playerOne.isHost) {
+            this.resetBall();
+            this.physics.velocityFromAngle(data.angle, BALL_SPEED, this.ball.body.velocity);
+            this.ball.ballLaunched = true;
+        } else if (data.type === "ballVelocity" && !this.playerOne.isHost) {
+            this.remoteBallTarget.set(
+                this.scale.width * (1 - this.readNormalized(data, "x")),
+                this.scale.height * (1 - this.readNormalized(data, "y"))
+            );
+            this.ball.ballLaunched = true;
+        } else if (data.type === "score") {
+            this.updateScore(data.scoreA, data.scoreB);
+        } else if (data.type === "pause") {
+            this.paused = data.freezed;
+            if (this.paused) this.resetBall();
+        }
+    }
 
-        this.socket.addEventListener("message", (event) => {
-            const data = JSON.parse(event.data);
+    readNormalized(data, axis) {
+        const value = data[`n${axis}`];
+        if (Number.isFinite(value)) return Phaser.Math.Clamp(value, 0, 1);
+        const dimension = axis === "x" ? this.scale.width : this.scale.height;
+        return Phaser.Math.Clamp(data[axis] / dimension, 0, 1);
+    }
 
-            if (data.type === "move") {
-                this.playerTwo.setPosition(this.scale.width - data.x, this.scale.height - data.y);
-            }
+    update(time) {
+        if (!this.playerOne) return;
+        this.updateLocalPlayer();
 
-            if (data.type === "lobby_connect") {
-                console.log("Lobby info: " + data.lobbyId + " " + data.isHost);
-                this.playerOne.isHost = data.isHost;
-                this.playerOne.lobbyId = data.lobbyId;
-            }
+        // Ease toward received snapshots instead of teleporting on each packet.
+        this.playerTwo.x = Phaser.Math.Linear(this.playerTwo.x, this.remotePlayerTarget.x, 0.28);
+        this.playerTwo.y = Phaser.Math.Linear(this.playerTwo.y, this.remotePlayerTarget.y, 0.28);
+        if (!this.playerOne.isHost) {
+            this.ball.x = Phaser.Math.Linear(this.ball.x, this.remoteBallTarget.x, 0.35);
+            this.ball.y = Phaser.Math.Linear(this.ball.y, this.remoteBallTarget.y, 0.35);
+        }
 
-            if (this.playerOne.isHost) {
-                this.ball.setBounce(1, 1).setCollideWorldBounds(true);
-                this.colliderPlayer = this.physics.add.collider(this.ball, this.playerOne);
-                this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
-            }
+        if (this.socket?.readyState !== WebSocket.OPEN || this.playerOne.lobbyId === null) return;
+        if (time - this.lastMoveSentAt >= NETWORK_INTERVAL) this.sendMovement(time);
+        if (this.playerOne.isHost && this.ball.ballLaunched) {
+            if (time - this.lastBallSentAt >= NETWORK_INTERVAL) this.sendBall(time);
+            this.checkForGoal();
+        }
+    }
 
-            if (data.type === "ballVelocity") {
-                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
-            }
+    updateLocalPlayer() {
+        if (this.paused) {
+            this.playerOne.setVelocity(0);
+            return;
+        }
+        const x = Number(this.keys.D.isDown) - Number(this.keys.A.isDown);
+        const y = Number(this.keys.S.isDown) - Number(this.keys.W.isDown);
+        if (x || y) {
+            const velocity = new Phaser.Math.Vector2(x, y).normalize().scale(PLAYER_SPEED);
+            this.playerOne.setVelocity(velocity.x, velocity.y);
+        } else {
+            this.playerOne.setVelocity(0);
+        }
+    }
 
-            if (data.type === "score" && !this.playerOne.isHost) {
-                console.log(`Received data:`, data);
-                if (data.winner === "player_1") {
-                    this.playerTwo.score = data.playerOneScore;
-                }
-                if (data.winner === "player_2") {
-                    this.playerOne.score = data.playerTwoScore;
-                }
-                // HTML Scoreboard synchronisieren
-                this.updateScore(this.playerOne.score, this.playerTwo.score);
-            }
-
-            if (data.type === "pause") {
-                if (data.freezed) {
-                    this.paused = true;
-                }
-            }
-
-            if (data.scoreA !== undefined || data.scoreB !== undefined) {
-                this.updateScore(data.scoreA, data.scoreB);
-            }
+    sendMovement(time) {
+        this.lastMoveSentAt = time;
+        this.send({
+            type: "move", x: this.playerOne.x, y: this.playerOne.y,
+            nx: this.playerOne.x / this.scale.width, ny: this.playerOne.y / this.scale.height,
+            lobbyId: this.playerOne.lobbyId
         });
     }
 
-    update() {
-        // Spieler 1 Bewegung
-        const speed = 4;
-        if (keys.w) this.playerOne.y -= speed;
-        if (keys.s) this.playerOne.y += speed;
-        if (keys.a) this.playerOne.x -= speed;
-        if (keys.d) this.playerOne.x += speed;
+    sendBall(time) {
+        this.lastBallSentAt = time;
+        this.send({
+            type: "ballVelocity", x: this.ball.x, y: this.ball.y,
+            nx: this.ball.x / this.scale.width, ny: this.ball.y / this.scale.height,
+            lobbyId: this.playerOne.lobbyId
+        });
+    }
+
+    checkForGoal() {
+        const goalTop = this.scale.height * (0.5 - GOAL_HEIGHT_RATIO / 2);
+        const goalBottom = this.scale.height * (0.5 + GOAL_HEIGHT_RATIO / 2);
+        const inGoal = this.ball.y >= goalTop && this.ball.y <= goalBottom;
+        if (!inGoal || (this.ball.x > 18 && this.ball.x < this.scale.width - 18)) return;
+        if (this.ball.x <= 18) this.scoreB += 1;
+        else this.scoreA += 1;
+        this.updateScore(this.scoreA, this.scoreB);
+        this.ball.ballLaunched = false;
+        this.send({ type: "score", scoreA: this.scoreA, scoreB: this.scoreB, lobbyId: this.playerOne.lobbyId });
+    }
+
+    send(payload) {
+        if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(payload));
+    }
+
+    resetBall() {
+        this.ball.setPosition(this.scale.width / 2, this.scale.height / 2).setVelocity(0);
+        this.remoteBallTarget.set(this.ball.x, this.ball.y);
+        this.ball.ballLaunched = false;
+    }
+
+    resizeGame(gameSize) {
+        this.bg.setDisplaySize(gameSize.width, gameSize.height);
+        this.physics.world.setBounds(0, 0, gameSize.width, gameSize.height);
+        this.playerOne.setPosition(
+            Phaser.Math.Clamp(this.playerOne.x, 25, gameSize.width - 25),
+            Phaser.Math.Clamp(this.playerOne.y, 25, gameSize.height - 25)
+        );
     }
 
     updateScore(scoreA, scoreB) {
-        if (scoreA !== undefined) {
-            this.scoreA = scoreA;
-            if (this.elScoreA) this.elScoreA.innerText = this.scoreA;
-        }
-        if (scoreB !== undefined) {
-            this.scoreB = scoreB;
-            if (this.elScoreB) this.elScoreB.innerText = this.scoreB;
-        }
+        if (Number.isFinite(scoreA)) this.scoreA = scoreA;
+        if (Number.isFinite(scoreB)) this.scoreB = scoreB;
+        if (this.elScoreA) this.elScoreA.textContent = this.scoreA;
+        if (this.elScoreB) this.elScoreB.textContent = this.scoreB;
     }
 
     updateTimer() {
-        if (this.timeLeft > 0) {
-            this.timeLeft--;
-            const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
-            const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
-
-            if (this.elTimer) {
-                this.elTimer.innerText = `${minutes}:${seconds}`;
-            }
-        }
+        if (this.paused || this.timeLeft <= 0) return;
+        this.timeLeft -= 1;
+        const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
+        const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
+        if (this.elTimer) this.elTimer.textContent = `${minutes}:${seconds}`;
     }
 }
-
-class SoccerPlayer {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-}
-
-window.onload = () => {
-    console.log("page is fully loaded");
-};
 
 const config = {
-    type: Phaser.WEBGL,
-    canvas: document.getElementById("gameCanvas"),
-    scale: {
-        mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: "100%",
-        height: "100%"
-    },
-    physics: {
-        default: "arcade",
-        arcade: {
-            gravity: { y: 0 },
-            debug: true,
-        },
-    },
-    scene: [GameScene],
+    type: Phaser.AUTO,
+    parent: "game-container",
+    scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
+    physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
+    scene: [GameScene]
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);

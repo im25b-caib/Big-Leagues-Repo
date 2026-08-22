@@ -1,5 +1,6 @@
 import random
 import asyncio
+from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 app = FastAPI()
@@ -19,7 +20,8 @@ class ConnectionManager:
             self.active_lobbies.append({
                 "id": len(self.active_lobbies) + 1,
                 "player_1": websocket,
-                "player_2": None}
+                "player_2": None,
+                "started": False}
             )
             is_host = True
 
@@ -62,6 +64,8 @@ class ConnectionManager:
             "type": "move",
             "x": data.get("x"),
             "y": data.get("y"),
+            "nx": data.get("nx"),
+            "ny": data.get("ny"),
             "lobbyId": data.get("lobbyId")
         }
     
@@ -85,11 +89,13 @@ class ConnectionManager:
         await asyncio.sleep(2)
 
         for lobby in self.active_lobbies:
-            if isinstance(lobby["player_2"], WebSocket) and isinstance(lobby["player_1"], WebSocket):
+            if (not lobby["started"] and isinstance(lobby["player_2"], WebSocket)
+                    and isinstance(lobby["player_1"], WebSocket)):
                 payload = self.launch_ball(lobby["id"])
                 
                 await lobby["player_1"].send_json(payload)
                 await lobby["player_2"].send_json(payload)
+                lobby["started"] = True
 
                 print(f"Started lobby with id: {lobby['id']}")
     
@@ -119,17 +125,15 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
 
-            if data.get("type") == "ballVelocity":
-                lobby = manager.active_lobbies[data.get("lobbyId") - 1]
-                if isinstance(lobby["player_2"], WebSocket):
-                    await lobby["player_2"].send_json(data)
+            if data.get("type") == "ballVelocity" and data.get("lobbyId"):
+                await manager.send_lobby_massage(data.get("lobbyId"), data, websocket)
             
             if data.get("type") == "score" and data.get("lobbyId"):
                 lobby = manager.active_lobbies[data.get("lobbyId") - 1]
 
                 for connection in lobby.values():
                     if isinstance(connection, WebSocket):
-                        await manager.send_lobby_massage(data.get("lobbyId"), data, websocket)
+                        await connection.send_json(data)
                         await connection.send_json({
                             "type": "pause",
                             "freezed": True
@@ -144,6 +148,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "freezed": False
                         })
 
+                lobby["started"] = False
                 await manager.start_full_lobby()
                 print(f"Sent new stats!")
 
@@ -152,4 +157,4 @@ async def websocket_endpoint(websocket: WebSocket):
                 await manager.send_lobby_massage(payload.get("lobbyId"), payload, websocket)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)     
+        manager.disconnect(websocket)
