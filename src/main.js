@@ -1,6 +1,5 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
-
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -68,34 +67,26 @@ class GameScene extends Phaser.Scene {
             bg.setDisplaySize(gameSize.width, gameSize.height);
         });
 
-        // Ball
-        this.ball = this.add.image(width / 2, height / 2, "ball");
+        // Ball als Physik-Objekt anlegen (damit Collider funktionieren)
+        this.ball = this.physics.add.image(width / 2, height / 2, "ball");
         this.ball.setDisplaySize(30, 30);
 
         // Spieler 1
         this.playerOne = this.physics.add.sprite(200, height / 2, "playerOne");
         this.playerOne.setDisplaySize(50, 50);
 
-        //Properties
         // Spieler 2
         this.playerTwo = this.physics.add.sprite(width - 200, height / 2, "playerTwo");
         this.playerTwo.setDisplaySize(50, 50);
 
-        // Properties
+        // Properties setzen
         this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
         this.playerOne.score = 0;
+        this.playerTwo.score = 0;
         this.ball.ballLaunched = false;
 
-
-
-        // Spieler 2
-        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
-        this.playerTwo.setDisplaySize(50, 50);
-        this.playerTwo.score = 0;
-        
-        //SOCKET
         // --- DOM-ELEMENTE FÜR HUD REFERENZIEREN ---
         this.elScoreA = document.getElementById("score-a");
         this.elScoreB = document.getElementById("score-b");
@@ -126,6 +117,7 @@ class GameScene extends Phaser.Scene {
 
         this.socket.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
+
             if (data.type === "move") {
                 this.playerTwo.setPosition(this.scale.width - data.x, this.scale.height - data.y);
             }
@@ -135,36 +127,12 @@ class GameScene extends Phaser.Scene {
                 this.playerOne.isHost = data.isHost;
                 this.playerOne.lobbyId = data.lobbyId;
             }
+
             if (this.playerOne.isHost) {
                 this.ball.setBounce(1, 1).setCollideWorldBounds(true);
                 this.colliderPlayer = this.physics.add.collider(this.ball, this.playerOne);
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
             }
-
-            if (data.type === "ballVelocity") {
-                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
-            }
-
-            if (data.type === "score" && !this.playerOne.isHost){
-                console.log(`Received data: ${data}`);
-                if (data.winner === "player_1") {
-                    this.playerTwo.score = data.playerScore;
-                }
-                if (data.winner === "player_2"){
-                    this.playerOne.score = data.enemyScore;
-                }
-            
-            if (data.type === "pause"){
-                if (data.freezed){
-                    this.paused = true;
-
-                    this.ball.setPosition(sizes.width / 2, sizes.height / 2);
-                    this.ball.body.setVelocity(0, 0);
-                }
-                else this.paused = false;
-            }
-        }
-        })
 
             if (data.scoreA !== undefined || data.scoreB !== undefined) {
                 this.updateScore(data.scoreA, data.scoreB);
@@ -173,12 +141,13 @@ class GameScene extends Phaser.Scene {
     }
 
     update() {
-        // Bewegung kommt hier rein
+        // Spieler 1 Bewegung
         const speed = 4;
         if (keys.w) this.playerOne.y -= speed;
         if (keys.s) this.playerOne.y += speed;
         if (keys.a) this.playerOne.x -= speed;
         if (keys.d) this.playerOne.x += speed;
+
         movePlayer();
     }
 
