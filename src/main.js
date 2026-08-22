@@ -7,6 +7,7 @@ const sizes = {
 
 let bg, ball, playerOne, playerTwo;
 
+//hihi
 // Event-Listener für Tastatur
 const keys = {
     w: false,

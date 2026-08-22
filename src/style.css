@@ -12,7 +12,7 @@
 html, body {
   width: 100vw;
   height: 100vh;
-  overflow: hidden; /* Scrollbalken komplett entfernen */
+  overflow: hidden; /* Scrollbalken komplett entfernen styles */
   background-color: var(--dark);
   font-family: 'Arial', sans-serif;
 }
