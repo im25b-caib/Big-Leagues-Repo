@@ -1,63 +1,79 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
+const speedDown = 200;
 
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
 };
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
+const speed = 5;
 
-let bg, ball, playerOne, playerTwo;
+// Eventlisteners
 
+window.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = true;
+    }
+});
+
+window.addEventListener("keyup", (event) => {
+    const key = event.key.toLowerCase();
+    if (key in keys) {
+        keys[key] = false;
+    }
+});
+
+function movePlayer() {
+    // adjust  x and y of player
+}
+
+let bg;
+let ball;
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
     }
 
     preload() {
-        // Zeigt in der Konsole genau, welche Datei fehlschlägt und unter welcher URL
-        this.load.on("loaderror", (file) => {
-            console.error("Laden fehlgeschlagen:", file.key, "→", file.src);
-        });
+        bg = this.load.image("bg", "/assets/Only_Field.webp");
+        bg.width = sizes.width;
+        bg.height = sizes.height;
 
-        // index.html liegt in /src/, die Bilder in /assets/ → eine Ebene hoch
-        this.load.setPath("../assets/");
+        ball = this.load.image("ball", "/assets/football.png");
 
-        this.load.image("bg", "Only_Field.webp");
-        this.load.image("ball", "football.png");
-        this.load.image("playerOne", "redcircle.png");
-        this.load.image("playerTwo", "bluecircle.png");
     }
 
     create() {
-        // Hintergrund
-        bg = this.add.image(0, 0, "bg").setOrigin(0, 0);
+        bg = this.add.image(0,0 , "bg").setOrigin(0, 0);
         bg.setDisplaySize(sizes.width, sizes.height);
 
-        // Ball
-        ball = this.add.image(sizes.width / 2, sizes.height / 2, "ball");
-        ball.setDisplaySize(30, 30);
-
-        // Spieler 1 — quadratisch, sonst wird der Kreis zur Ellipse
-        playerOne = this.add.image(200, sizes.height / 2, "playerOne");
-        playerOne.setDisplaySize(50, 50);
-
-        // Spieler 2
-        playerTwo = this.add.image(sizes.width - 200, sizes.height / 2, "playerTwo");
-        playerTwo.setDisplaySize(50, 50);
+        ball = this.add.image(0,0 , "ball").setOrigin(0, 0);
     }
 
     update() {
-        // Bewegung kommt hier rein
+
     }
+
 }
 
+window.onload = () => {
+    console.log("page is fully loaded");
+};
 const config = {
-    type: Phaser.AUTO,
+    type: Phaser.WEBGL,
     width: sizes.width,
     height: sizes.height,
+    canvas: gameCanvas,
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 0 },
+            gravity: { y: speedDown },
             debug: true,
         },
     },
@@ -65,3 +81,11 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+
+class SoccerPlayer {
+    constructor() {this.x = x, this.y = y}
+}
+
+
+
