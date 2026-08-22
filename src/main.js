@@ -9,6 +9,7 @@ const sizes = {
 const speedDown = 300
 
 let bg;
+let ball;
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
@@ -18,6 +19,8 @@ class GameScene extends Phaser.Scene {
         bg = this.load.image("bg", "/assets/Only_Field.webp");
         bg.width = sizes.width;
         bg.height = sizes.height;
+
+        ball = this.load.image("ball", "assets/Ball.png");
     }
 
     create() {
