@@ -4,19 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link type="text/css" rel="stylesheet" href="src/style.css">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/phaser/dist/phaser.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/phaser/dist/phaser.min.js"></script> wesh -->
     <title>Ballmaxxing</title>
   </head>
   <body>
-  <header>
-    <p>Welcome!</p>
-  </header>
   <main>
-    <canvas id="gameCanvas"></canvas>
+    <div class="hud-container">
+      <div class="scoreboard">
+        <div class="team team-a">TEAM A</div>
+        <div class="scores">
+          <span id="score-a">0</span>
+          <span id="score-b">0</span>
+        </div>
+        <div class="team team-b">TEAM B</div>
+      </div>
+
+      <!-- Timer steht im HTML nach dem Scoreboard -->
+      <div class="timer-box" id="timer">03:00</div>
+    </div>
+
   </main>
-  <footer>
-    <p>Ballmaxxing | Hackathon 2026</p>
-  </footer>
   <script type="module" src="/src/main.js"></script>
   </body>
 </html>

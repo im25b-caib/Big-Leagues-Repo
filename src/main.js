@@ -1,7 +1,5 @@
 import * as Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.esm.js";
 
-
-
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -9,6 +7,7 @@ const sizes = {
 
 let bg, ball, playerOne, playerTwo;
 
+// Event-Listener für Tastatur
 const keys = {
     w: false,
     a: false,
@@ -30,19 +29,19 @@ window.addEventListener("keyup", (event) => {
     }
 });
 
-
 class GameScene extends Phaser.Scene {
     constructor() {
         super("scene-game");
+        this.scoreA = 0;
+        this.scoreB = 0;
+        this.timeLeft = 180; // 3 Minuten in Sekunden
     }
 
     preload() {
-        // Zeigt in der Konsole genau, welche Datei fehlschlägt und unter welcher URL
         this.load.on("loaderror", (file) => {
             console.error("Laden fehlgeschlagen:", file.key, "→", file.src);
         });
 
-        // index.html liegt in /src/, die Bilder in /assets/ → eine Ebene hoch
         this.load.setPath("../assets/");
 
         this.load.image("bg", "Only_Field.webp");
@@ -52,33 +51,52 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        // Hintergrund
-        bg = this.add.image(0, 0, "bg").setOrigin(0, 0);
-        bg.setDisplaySize(sizes.width, sizes.height);
+        const width = this.scale.width;
+        const height = this.scale.height;
 
-        // Ball
-        this.ball = this.add.image(sizes.width / 2, sizes.height / 2, "ball");
+        // Hintergrund skaliert auf volle Canvas-Größe
+        bg = this.add.image(0, 0, "bg").setOrigin(0, 0);
+        bg.setDisplaySize(width, height);
+
+        // Dynamisches Resizing falls Fenstergröße verändert wird
+        this.scale.on('resize', (gameSize) => {
+            bg.setDisplaySize(gameSize.width, gameSize.height);
+        });
+
+        // Ball als Physik-Objekt anlegen
+        this.ball = this.physics.add.image(width / 2, height / 2, "ball");
         this.ball.setDisplaySize(30, 30);
 
-        // Spieler 1 — quadratisch, sonst wird der Kreis zur Ellipse
-        this.playerOne = this.physics.add.sprite(200, sizes.height / 2, "playerOne");
+        // Spieler 1
+        this.playerOne = this.physics.add.sprite(200, height / 2, "playerOne");
         this.playerOne.setDisplaySize(50, 50);
 
-        //Properties
+        // Spieler 2
+        this.playerTwo = this.physics.add.sprite(width - 200, height / 2, "playerTwo");
+        this.playerTwo.setDisplaySize(50, 50);
+
+        // Properties setzen
         this.paused = false;
         this.playerOne.isHost = null;
         this.playerOne.lobbyId = null;
         this.playerOne.score = 0;
+        this.playerTwo.score = 0;
         this.ball.ballLaunched = false;
 
+        // --- DOM-ELEMENTE FÜR HUD REFERENZIEREN ---
+        this.elScoreA = document.getElementById("score-a");
+        this.elScoreB = document.getElementById("score-b");
+        this.elTimer = document.getElementById("timer");
 
+        // --- PHASER TIMER EVENT ---
+        this.time.addEvent({
+            delay: 1000,
+            callback: this.updateTimer,
+            callbackScope: this,
+            loop: true
+        });
 
-        // Spieler 2
-        this.playerTwo = this.physics.add.sprite(sizes.width - 200, sizes.height / 2, "playerTwo");
-        this.playerTwo.setDisplaySize(50, 50);
-        this.playerTwo.score = 0;
-
-        //SOCKET
+        // --- WEBSOCKET ---
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
         this.socket.onopen = (event) => {
             console.log("New socket connected!");
@@ -88,12 +106,13 @@ class GameScene extends Phaser.Scene {
         };
         this.socket.onerror = (error) => {
             console.error("Websocket error: ", error);
-        }
+        };
 
         this.socket.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
+
             if (data.type === "move") {
-                this.playerTwo.setPosition(sizes.width - data.x, config.height - data.y);
+                this.playerTwo.setPosition(this.scale.width - data.x, this.scale.height - data.y);
             }
 
             if (data.type === "lobby_connect") {
@@ -101,40 +120,43 @@ class GameScene extends Phaser.Scene {
                 this.playerOne.isHost = data.isHost;
                 this.playerOne.lobbyId = data.lobbyId;
             }
+
             if (this.playerOne.isHost) {
                 this.ball.setBounce(1, 1).setCollideWorldBounds(true);
-                this.colliderPlayerOne = this.physics.add.collider(this.ball, this.playerOne);
-                this.colliderPlayerTwo = this.physics.add.collider(this.ball, this.playerTwo);
+                this.colliderPlayer = this.physics.add.collider(this.ball, this.playerOne);
+                this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
             }
 
             if (data.type === "ballVelocity") {
                 this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
             }
 
-            if (data.type === "score" && !this.playerOne.isHost){
-                console.log(`Received data: ${data}`);
+            if (data.type === "score" && !this.playerOne.isHost) {
+                console.log(`Received data:`, data);
                 if (data.winner === "player_1") {
                     this.playerTwo.score = data.playerOneScore;
                 }
-                if (data.winner === "player_2"){
+                if (data.winner === "player_2") {
                     this.playerOne.score = data.playerTwoScore;
                 }
-            
-            if (data.type === "pause"){
-                if (data.freezed){
-                    this.paused = true;
-
-                    this.ball.setPosition(sizes.width / 2, sizes.height / 2);
-                    this.ball.body.setVelocity(0, 0);
-                }
-                else this.paused = false;
+                // HTML Scoreboard synchronisieren
+                this.updateScore(this.playerOne.score, this.playerTwo.score);
             }
-        }
-        })
+
+            if (data.type === "pause") {
+                if (data.freezed) {
+                    this.paused = true;
+                }
+            }
+
+            if (data.scoreA !== undefined || data.scoreB !== undefined) {
+                this.updateScore(data.scoreA, data.scoreB);
+            }
+        });
     }
 
     update() {
-        // Bewegung kommt hier rein
+        // Spieler 1 Bewegung
         const speed = 4;
         if (keys.w) this.playerOne.y -= speed;
         if (keys.s) this.playerOne.y += speed;
@@ -142,16 +164,50 @@ class GameScene extends Phaser.Scene {
         if (keys.d) this.playerOne.x += speed;
     }
 
+    updateScore(scoreA, scoreB) {
+        if (scoreA !== undefined) {
+            this.scoreA = scoreA;
+            if (this.elScoreA) this.elScoreA.innerText = this.scoreA;
+        }
+        if (scoreB !== undefined) {
+            this.scoreB = scoreB;
+            if (this.elScoreB) this.elScoreB.innerText = this.scoreB;
+        }
+    }
+
+    updateTimer() {
+        if (this.timeLeft > 0) {
+            this.timeLeft--;
+            const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
+            const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
+
+            if (this.elTimer) {
+                this.elTimer.innerText = `${minutes}:${seconds}`;
+            }
+        }
+    }
+}
+
+class SoccerPlayer {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
 }
 
 window.onload = () => {
     console.log("page is fully loaded");
 };
+
 const config = {
     type: Phaser.WEBGL,
-    width: sizes.width,
-    height: sizes.height,
-    canvas: gameCanvas,
+    canvas: document.getElementById("gameCanvas"),
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: "100%",
+        height: "100%"
+    },
     physics: {
         default: "arcade",
         arcade: {
@@ -163,11 +219,3 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-
-
-class SoccerPlayer {
-    constructor() {this.x = x, this.y = y}
-}
-
-
-
