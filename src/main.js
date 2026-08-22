@@ -20,15 +20,19 @@ class GameScene extends Phaser.Scene {
         bg.width = sizes.width;
         bg.height = sizes.height;
 
-        ball = this.load.image("ball", "assets/Ball.png");
+        ball = this.load.image("ball", "/assets/football.png");
+
     }
 
     create() {
         bg = this.add.image(0,0 , "bg").setOrigin(0, 0);
         bg.setDisplaySize(sizes.width, sizes.height);
+
+        ball = this.add.image(0,0 , "ball").setOrigin(0, 0);
     }
 
     update() {
+
     }
 
 }
