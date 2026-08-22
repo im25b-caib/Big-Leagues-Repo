@@ -19,19 +19,10 @@ npm run dev
 Enjoy! 
 
 ## Keybinds 
-There are two players: 
-Player 1:
 - W/A/S/D - Movement 
 - F - Shooting the ball
 - E - tackle
 - Q - Dribble / dodge tackle
-- MOUSE CURSOR FUR CHANGING THE SHOOTING DIRECTION
-Player 2:
-- 5/1/2/3 - Movement with Numpad
-- J - Shoot
-- L - Dribble
-- P - Tackle
-- ARROW KEWS FOR SPINNING
 
 =======
 Open the Vite URL in two browser tabs to join the same lobby.
