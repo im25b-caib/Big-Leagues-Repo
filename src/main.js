@@ -7,7 +7,6 @@ const sizes = {
 
 let bg, ball, playerOne, playerTwo;
 
-//hihi
 // Event-Listener für Tastatur
 const keys = {
     w: false,
@@ -29,10 +28,6 @@ window.addEventListener("keyup", (event) => {
         keys[key] = false;
     }
 });
-
-function movePlayer() {
-    // Hier deine Bewegungslogik
-}
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -68,7 +63,7 @@ class GameScene extends Phaser.Scene {
             bg.setDisplaySize(gameSize.width, gameSize.height);
         });
 
-        // Ball als Physik-Objekt anlegen (damit Collider funktionieren)
+        // Ball als Physik-Objekt anlegen
         this.ball = this.physics.add.image(width / 2, height / 2, "ball");
         this.ball.setDisplaySize(30, 30);
 
@@ -103,15 +98,12 @@ class GameScene extends Phaser.Scene {
 
         // --- WEBSOCKET ---
         this.socket = new WebSocket(`ws://127.0.0.1:8000/ws`);
-
         this.socket.onopen = (event) => {
             console.log("New socket connected!");
         };
-
         this.socket.onclose = (event) => {
             console.log("Socket closed");
         };
-
         this.socket.onerror = (error) => {
             console.error("Websocket error: ", error);
         };
@@ -135,6 +127,28 @@ class GameScene extends Phaser.Scene {
                 this.colliderEnemy = this.physics.add.collider(this.ball, this.playerTwo);
             }
 
+            if (data.type === "ballVelocity") {
+                this.ball.setPosition(sizes.width - data.x, sizes.height - data.y);
+            }
+
+            if (data.type === "score" && !this.playerOne.isHost) {
+                console.log(`Received data:`, data);
+                if (data.winner === "player_1") {
+                    this.playerTwo.score = data.playerOneScore;
+                }
+                if (data.winner === "player_2") {
+                    this.playerOne.score = data.playerTwoScore;
+                }
+                // HTML Scoreboard synchronisieren
+                this.updateScore(this.playerOne.score, this.playerTwo.score);
+            }
+
+            if (data.type === "pause") {
+                if (data.freezed) {
+                    this.paused = true;
+                }
+            }
+
             if (data.scoreA !== undefined || data.scoreB !== undefined) {
                 this.updateScore(data.scoreA, data.scoreB);
             }
@@ -148,8 +162,6 @@ class GameScene extends Phaser.Scene {
         if (keys.s) this.playerOne.y += speed;
         if (keys.a) this.playerOne.x -= speed;
         if (keys.d) this.playerOne.x += speed;
-
-        movePlayer();
     }
 
     updateScore(scoreA, scoreB) {
