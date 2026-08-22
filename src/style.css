@@ -1,0 +1,44 @@
+:root {
+  --dark:#181818;
+  --light:#whitesmoke;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing: border-box;
+}
+
+html, body{
+  height: 100%;
+}
+
+body{
+  background-color: darkgray;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header, footer{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+main{
+  flex:1;
+  display: flex;
+}
+
+#gameContainer{
+  border:1px solid blue;
+  position: absolute;
+  top: 50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+  display: block;
+  z-index: 1;
+}
